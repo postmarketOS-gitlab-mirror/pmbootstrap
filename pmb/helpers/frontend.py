@@ -16,6 +16,7 @@ import pmb.ci
 import pmb.config
 import pmb.export
 import pmb.flasher
+import pmb.gui
 import pmb.helpers.aportupgrade
 import pmb.helpers.devices
 import pmb.helpers.git
@@ -659,3 +660,8 @@ def ci(args):
         scripts_selected = pmb.ci.ask_which_scripts_to_run(scripts_available)
 
     pmb.ci.run_scripts(args, topdir, scripts_selected)
+
+
+def gui(args):
+    pmb.gui.run_gui(args)
+

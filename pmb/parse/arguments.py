@@ -535,7 +535,15 @@ def arguments_netboot(subparser):
     start = sub.add_parser("serve", help="start nbd server")
     start.add_argument("--replace", action="store_true",
                        help="replace stored netboot image")
+    return ret
 
+
+def arguments_gui(subparser):
+    ret = subparser.add_parser("gui", help="Run pmbootstrap with GUI")
+    ret.add_argument("--qt5", action="store_true",
+                     help="Force Qt-based GUI")
+    ret.add_argument("--gtk", action="store_true",
+                     help="Force Gtk-based GUI")
     return ret
 
 
@@ -702,6 +710,7 @@ def arguments():
     arguments_lint(sub)
     arguments_status(sub)
     arguments_ci(sub)
+    arguments_gui(sub)
 
     # Action: log
     log = sub.add_parser("log", help="follow the pmbootstrap logfile")
