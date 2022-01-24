@@ -8,11 +8,12 @@ import pmb.config
 import pmb.install.losetup
 
 
-def partitions_mount(args, root_id, sdcard):
+def partitions_mount(args, root_id, sdcard, boot_id=1):
     """
     Mount blockdevices of partitions inside native chroot
     :param root_id: root partition id
     :param sdcard: path to sdcard device (e.g. /dev/mmcblk0) or None
+    :param boot_id: boot partition id
     """
     prefix = sdcard
     if not sdcard:
@@ -37,13 +38,13 @@ def partitions_mount(args, root_id, sdcard):
                            prefix + " to be located at " + prefix +
                            "1 or " + prefix + "p1!")
 
-    for i in [1, root_id]:
+    for i in [boot_id, root_id]:
         source = prefix + partition_prefix + str(i)
         target = args.work + "/chroot_native/dev/installp" + str(i)
         pmb.helpers.mount.bind_file(args, source, target)
 
 
-def partition(args, size_boot, size_reserve):
+def partition(args, size_boot, size_reserve, towboot=False):
     """
     Partition /dev/install and create /dev/install{p1,p2,p3}:
     * /dev/installp1: boot
@@ -55,6 +56,8 @@ def partition(args, size_boot, size_reserve):
 
     :param size_boot: size of the boot partition in MiB
     :param size_reserve: empty partition between root and boot in MiB (pma#463)
+    :param tow_boot: true if tow-boot is present on the install device, false
+    if not
     """
     # Convert to MB and print info
     mb_boot = f"{round(size_boot)}M"
@@ -71,21 +74,28 @@ def partition(args, size_boot, size_reserve):
     # will stop there (see #463).
     boot_part_start = args.deviceinfo["boot_part_start"] or "2048"
 
-    partition_type = args.deviceinfo["partition_type"] or "msdos"
-
-    commands = [
-        ["mktable", partition_type],
-        ["mkpart", "primary", filesystem, boot_part_start + 's', mb_boot],
-    ]
+    if towboot:
+        # Don't create a new partition table, Tow-Boot has already done that
+        commands = [
+            ["mkpart", "primary", filesystem, boot_part_start + 's', mb_boot]
+        ]
+    else:
+        partition_type = args.deviceinfo["partition_type"] or "msdos"
+        commands = [
+            ["mktable", partition_type],
+            ["mkpart", "primary", filesystem, boot_part_start + 's', mb_boot],
+        ]
 
     if size_reserve:
         mb_reserved_end = f"{round(size_reserve + size_boot)}M"
         commands += [["mkpart", "primary", mb_boot, mb_reserved_end]]
 
-    commands += [
-        ["mkpart", "primary", mb_root_start, "100%"],
-        ["set", "1", "boot", "on"]
-    ]
+    commands += [["mkpart", "primary", mb_root_start, "100%"]]
+
+    if towboot:
+        commands += [["set", "2", "boot", "on"]]
+    else:
+        commands += [["set", "1", "boot", "on"]]
 
     for command in commands:
         pmb.chroot.root(args, ["parted", "-s", "/dev/install"] +
