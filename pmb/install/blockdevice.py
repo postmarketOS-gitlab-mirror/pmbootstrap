@@ -49,8 +49,8 @@ def has_tow_shared_storage(args, path):
                                 blockdevice_inside)
     try:
         findtow = pmb.chroot.root(args, ["findtow", "--device",
-                                    blockdevice_inside],
-                                    check=False, output_return=False)
+                                         blockdevice_inside],
+                                  check=False, output_return=False)
     finally:
         pmb.helpers.run.root(args, ["umount", args.work + "/chroot_native" +
                                     blockdevice_inside])
@@ -76,8 +76,8 @@ def mount_sdcard(args, path):
                                 args.work + "/chroot_native/dev/install")
     if has_previous_install(args, path):
         if not pmb.helpers.cli.confirm(args, "WARNING: This device has a"
-                                       " previous installation of pmOS."
-                                       " CONTINUE?"):
+                                             " previous installation of pmOS."
+                                             " CONTINUE?"):
             raise RuntimeError("Aborted.")
     elif has_tow_shared_storage(args, path):
         if not pmb.helpers.cli.confirm(args, "The target has tow-boot shared"
@@ -85,7 +85,7 @@ def mount_sdcard(args, path):
             raise RuntimeError("Aborted.")
     else:
         if not pmb.helpers.cli.confirm(args, f"EVERYTHING ON {path} WILL BE"
-                                       " ERASED! CONTINUE?"):
+                                             " ERASED! CONTINUE?"):
             raise RuntimeError("Aborted.")
 
 
@@ -118,7 +118,7 @@ def create_and_mount_image(args, size_boot, size_root, size_reserve,
     # Make sure there is enough free space
     size_mb = round(size_boot + size_reserve + size_root)
     disk_data = os.statvfs(args.work)
-    free = round((disk_data.f_bsize * disk_data.f_bavail) / (1024**2))
+    free = round((disk_data.f_bsize * disk_data.f_bavail) / (1024 ** 2))
     if size_mb > free:
         raise RuntimeError("Not enough free space to create rootfs image! "
                            f"(free: {free}M, required: {size_mb}M)")
