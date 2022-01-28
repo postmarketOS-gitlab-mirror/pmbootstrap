@@ -629,6 +629,11 @@ def install_system_image(args, size_reserve, suffix, step, steps,
     code = pmb.chroot.root(args, ["findtow", "--device", "/dev/install"],
                            check=False, output_return=False)
     found_towboot = code == 0
+    if found_towboot:
+        logging.debug("Found tow-boot shared storage on target device")
+    else:
+        logging.debug("Target device does not have tow-boot shared"
+                      " storage partitions")
 
     if not args.rsync:
         pmb.install.blockdevice.create(args, size_boot, size_root,

@@ -44,7 +44,31 @@ def partitions_mount(args, root_id, sdcard, boot_id=1):
         pmb.helpers.mount.bind_file(args, source, target)
 
 
-def partition(args, size_boot, size_reserve, towboot=False):
+def partition_read(args, path):
+    cmd = ['parted', '--script', path, 'unit', 's', 'print']
+    raw = pmb.chroot.root(args, cmd, check=True, output_return=True)
+    header = True
+    result = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if line.startswith("Number "):
+            header = False
+            continue
+        elif header:
+            continue
+        part = line.split()
+        if len(part) < 4:
+            continue
+        result.append([
+            int(part[0]),       # Partition number
+            int(part[1][:-1]),  # Start sector
+            int(part[2][:-1])   # End sector
+        ])
+
+    return result
+
+
+def partition(args, size_boot, size_reserve, towboot):
     """
     Partition /dev/install and create /dev/install{p1,p2,p3}:
     * /dev/installp1: boot
@@ -75,8 +99,26 @@ def partition(args, size_boot, size_reserve, towboot=False):
     boot_part_start = args.deviceinfo["boot_part_start"] or "2048"
 
     if towboot:
-        # Don't create a new partition table, Tow-Boot has already done that
-        commands = [
+        # Don't create a new partition table, Tow-Boot has already done that.
+        # Read the existing partitions to clean existing installations on the
+        # shared storage.
+
+        # Make sure the backup GPT table is at the end of the disk
+        pmb.chroot.root(args, ["sgdisk", "-e", "/dev/install"], check=True)
+
+        current_partitions = partition_read(args, "/dev/install")
+        boot_part_start = str(current_partitions[0][2] + 1)
+
+        commands = []
+
+        # Remove existing partitions after the tow-boot partition
+        if len(current_partitions) > 1:
+            for part in current_partitions[1:]:
+                commands += [
+                    ["rm", str(part[0])]
+                ]
+
+        commands += [
             ["mkpart", "primary", filesystem, boot_part_start + 's', mb_boot]
         ]
     else:
