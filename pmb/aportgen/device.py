@@ -180,6 +180,7 @@ def generate_deviceinfo(args, pkgname, name, manufacturer, year, arch,
         deviceinfo_external_storage="{external_storage}"
         deviceinfo_screen_width="800"
         deviceinfo_screen_height="600"
+        deviceinfo_gpu_accelerated="true"
 
         # Bootloader related
         deviceinfo_flash_method="{flash_method}"
