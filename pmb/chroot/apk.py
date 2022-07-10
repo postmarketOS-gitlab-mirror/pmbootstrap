@@ -38,7 +38,7 @@ def update_repository_list(args, suffix="native", check=False):
             for line in handle:
                 lines_old.append(line[:-1])
     else:
-        pmb.helpers.run.root(args, ["mkdir", "-p", os.path.dirname(path)])
+        pmb.helpers.run.user(args, ["mkdir", "-p", os.path.dirname(path)])
 
     # Up to date: Save cache, return
     lines_new = pmb.helpers.repo.urls(args)
@@ -53,9 +53,9 @@ def update_repository_list(args, suffix="native", check=False):
     # Update the file
     logging.debug(f"({suffix}) update /etc/apk/repositories")
     if os.path.exists(path):
-        pmb.helpers.run.root(args, ["rm", path])
+        pmb.helpers.run.user(args, ["rm", path])
     for line in lines_new:
-        pmb.helpers.run.root(args, ["sh", "-c", "echo "
+        pmb.helpers.run.user(args, ["sh", "-c", "echo "
                                     f"{shlex.quote(line)} >> {path}"])
     update_repository_list(args, suffix, True)
 

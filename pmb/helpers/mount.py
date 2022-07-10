@@ -37,11 +37,12 @@ def bind(args, source, destination, create_folders=True, umount=False):
         if os.path.exists(path):
             continue
         if create_folders:
-            pmb.helpers.run.root(args, ["mkdir", "-p", path])
+            pmb.helpers.run.user(args, ["mkdir", "-p", path])
         else:
             raise RuntimeError("Mount failed, folder does not exist: " +
                                path)
 
+    return
     # Actually mount the folder
     pmb.helpers.run.root(args, ["mount", "--bind", source, destination])
 

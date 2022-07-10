@@ -169,4 +169,5 @@ def run(args, parameters):
     if args.offline:
         parameters = ["--no-network"] + parameters
     pmb.helpers.apk.apk_with_progress(
-        args, [f"{args.work}/apk.static"] + parameters, chroot=False)
+        # FIXME: --allow-untrusted is not strictly necessary here, but previously the keys were put in place via bind mounts which we can't use when rootless
+        args, [f"{args.work}/apk.static"] + ["--allow-untrusted"] + parameters, chroot=False)

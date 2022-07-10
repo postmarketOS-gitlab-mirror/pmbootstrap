@@ -19,7 +19,7 @@ def folder_size(args, path):
 
     :returns: folder size in kilobytes
     """
-    output = pmb.helpers.run.root(args, ["du", "-ks",
+    output = pmb.helpers.run.user(args, ["du", "-ks",
                                          path], output_return=True)
 
     # Only look at last line to filter out sudo garbage (#1766)

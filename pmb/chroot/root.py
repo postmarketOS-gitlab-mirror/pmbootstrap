@@ -15,7 +15,7 @@ def executables_absolute_path():
     Get the absolute paths to the sh and chroot executables.
     """
     ret = {}
-    for binary in ["sh", "chroot"]:
+    for binary in ["sh", "chroot", "bwrap"]:
         path = shutil.which(binary, path=pmb.config.chroot_host_path)
         if not path:
             raise RuntimeError(f"Could not find the '{binary}'"
@@ -64,15 +64,27 @@ def root(args, cmd, suffix="native", working_dir="/", output="log",
     for key, value in env.items():
         env_all[key] = value
 
+    # Get all mountpoints
+    arch = pmb.parse.arch.from_chroot_suffix(args, suffix)
+    channel = pmb.config.pmaports.read_config(args)["channel"]
+    bind_command_list = []
+    for source, target in pmb.config.chroot_mount_bind.items():
+        source = source.replace("$WORK", args.work)
+        source = source.replace("$ARCH", arch)
+        source = source.replace("$CHANNEL", channel)
+        bind_command_list + ["--bind", source, target]
+
+
     # Build the command in steps and run it, e.g.:
     # cmd: ["echo", "test"]
     # cmd_chroot: ["/sbin/chroot", "/..._native", "/bin/sh", "-c", "echo test"]
     # cmd_sudo: ["sudo", "env", "-i", "sh", "-c", "PATH=... /sbin/chroot ..."]
     executables = executables_absolute_path()
-    cmd_chroot = [executables["chroot"], chroot, "/bin/sh", "-c",
-                  pmb.helpers.run.flat_cmd(cmd, working_dir)]
+    cmd_chroot = [executables["bwrap"]] + bind_command_list + ["--uid", "0", "--gid", "0", "--dev-bind", chroot, "/", "--setenv", "PATH", "/sbin:/usr/sbin:/bin:/usr/bin", "/bin/sh", "-c",
+                  "PATH=/bin;" + pmb.helpers.run.flat_cmd(cmd, working_dir)]
     cmd_sudo = [pmb.config.sudo, "env", "-i", executables["sh"], "-c",
                 pmb.helpers.run.flat_cmd(cmd_chroot, env=env_all)]
-    return pmb.helpers.run_core.core(args, msg, cmd_sudo, None, output,
+    print(cmd_chroot)
+    return pmb.helpers.run_core.core(args, msg, cmd_chroot, None, output,
                                      output_return, check, True,
                                      disable_timeout)

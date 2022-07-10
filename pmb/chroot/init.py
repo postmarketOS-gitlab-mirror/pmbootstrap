@@ -25,7 +25,7 @@ def copy_resolv_conf(args, suffix="native"):
     chroot = f"{args.work}/chroot_{suffix}{host}"
     if os.path.exists(host):
         if not os.path.exists(chroot) or not filecmp.cmp(host, chroot):
-            pmb.helpers.run.root(args, ["cp", host, chroot])
+            pmb.helpers.run.user(args, ["cp", host, chroot])
     else:
         pmb.helpers.run.root(args, ["touch", chroot])
 
@@ -38,7 +38,7 @@ def mark_in_chroot(args, suffix="native"):
     """
     in_chroot_file = f"{args.work}/chroot_{suffix}/in-pmbootstrap"
     if not os.path.exists(in_chroot_file):
-        pmb.helpers.run.root(args, ["touch", in_chroot_file])
+        pmb.helpers.run.user(args, ["touch", in_chroot_file])
 
 
 def setup_qemu_emulation(args, suffix):
@@ -71,7 +71,7 @@ def init_keys(args):
         target = f"{args.work}/config_apk_keys/{os.path.basename(key)}"
         if not os.path.exists(target):
             # Copy as root, so the resulting files in chroots are owned by root
-            pmb.helpers.run.root(args, ["cp", key, target])
+            pmb.helpers.run.user(args, ["cp", key, target]) # FIXME: use fakeroot?
 
 
 def init(args, suffix="native"):
@@ -95,7 +95,7 @@ def init(args, suffix="native"):
 
     # Initialize cache
     apk_cache = f"{args.work}/cache_apk_{arch}"
-    pmb.helpers.run.root(args, ["ln", "-s", "-f", "/var/cache/apk",
+    pmb.helpers.run.user(args, ["ln", "-s", "-f", "/var/cache/apk",
                                 f"{chroot}/etc/apk/cache"])
 
     # Initialize /etc/apk/keys/, resolv.conf, repositories

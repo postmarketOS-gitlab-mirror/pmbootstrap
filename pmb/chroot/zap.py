@@ -78,7 +78,7 @@ def zap(args, confirm=True, dry=False, pkgs_local=False, http=False,
                     pmb.helpers.cli.confirm(args, f"Remove {match}?")):
                 logging.info(f"% rm -rf {match}")
                 if not dry:
-                    pmb.helpers.run.root(args, ["rm", "-rf", match])
+                    pmb.helpers.run.user(args, ["rm", "-rf", match])
 
     # Remove config init dates for deleted chroots
     pmb.config.workdir.clean(args)
@@ -141,7 +141,7 @@ def zap_pkgs_local_mismatch(args, confirm=True, dry=False):
                 logging.info(f"% rm {apk_path_short}"
                              f" ({origin} aport: {version_aport})")
                 if not dry:
-                    pmb.helpers.run.root(args, ["rm", apk_path])
+                    pmb.helpers.run.user(args, ["rm", apk_path])
                     reindex = True
 
     if reindex:

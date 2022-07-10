@@ -79,7 +79,7 @@ def shutdown(args, only_install_related=False):
     # contents get copied to a rootfs / installer image, or if creating an
     # android recovery zip from its contents).
     for marker in glob.glob(f"{args.work}/chroot_*/in-pmbootstrap"):
-        pmb.helpers.run.root(args, ["rm", marker])
+        pmb.helpers.run.user(args, ["rm", marker])
 
     if not only_install_related:
         # Umount all folders inside args.work

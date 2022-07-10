@@ -12,6 +12,7 @@ def create_device_nodes(args, suffix):
     """
     Create device nodes for null, zero, full, random, urandom in the chroot.
     """
+    return
     try:
         chroot = args.work + "/chroot_" + suffix
 
@@ -60,20 +61,20 @@ def mount_dev_tmpfs(args, suffix="native"):
         return
 
     # Create the $chroot/dev folder and mount tmpfs there
-    pmb.helpers.run.root(args, ["mkdir", "-p", dev])
-    pmb.helpers.run.root(args, ["mount", "-t", "tmpfs",
-                                "-o", "size=1M,noexec,dev",
-                                "tmpfs", dev])
+    pmb.helpers.run.user(args, ["mkdir", "-p", dev])
+    #pmb.helpers.run.user(args, ["mount", "-t", "tmpfs",
+                                #"-o", "size=1M,noexec,dev",
+                                #"tmpfs", dev])
 
     # Create pts, shm folders and device nodes
-    pmb.helpers.run.root(args, ["mkdir", "-p", dev + "/pts", dev + "/shm"])
-    pmb.helpers.run.root(args, ["mount", "-t", "tmpfs",
-                                "-o", "nodev,nosuid,noexec",
-                                "tmpfs", dev + "/shm"])
+    pmb.helpers.run.user(args, ["mkdir", "-p", dev + "/pts", dev + "/shm"])
+    #pmb.helpers.run.root(args, ["mount", "-t", "tmpfs",
+                                #"-o", "nodev,nosuid,noexec",
+                                #"tmpfs", dev + "/shm"])
     create_device_nodes(args, suffix)
 
     # Setup /dev/fd as a symlink
-    pmb.helpers.run.root(args, ["ln", "-sf", "/proc/self/fd", f"{dev}/"])
+    pmb.helpers.run.user(args, ["ln", "-sf", "/proc/self/fd", f"{dev}/"])
 
 
 def mount(args, suffix="native"):
@@ -104,5 +105,5 @@ def mount_native_into_foreign(args, suffix):
     musl = os.path.basename(glob.glob(source + "/lib/ld-musl-*.so.1")[0])
     musl_link = args.work + "/chroot_" + suffix + "/lib/" + musl
     if not os.path.lexists(musl_link):
-        pmb.helpers.run.root(args, ["ln", "-s", "/native/lib/" + musl,
+        pmb.helpers.run.user(args, ["ln", "-s", "/native/lib/" + musl,
                                     musl_link])

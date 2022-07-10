@@ -189,7 +189,7 @@ def update(args, arch=None, force=False, existing_only=False):
         target_folder = os.path.dirname(target)
         if not os.path.exists(target_folder):
             pmb.helpers.run.root(args, ["mkdir", "-p", target_folder])
-        pmb.helpers.run.root(args, ["cp", temp, target])
+        pmb.helpers.run.user(args, ["cp", temp, target])
     pmb.helpers.cli.progress_flush(args)
 
     return True

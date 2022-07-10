@@ -9,7 +9,7 @@ def which_sudo():
     Find whether sudo or doas is installed for commands that require root.
     Allows user to override preferred sudo with PMB_SUDO env variable.
     """
-    supported_sudos = ['doas', 'sudo']
+    supported_sudos = ["false", 'doas', 'sudo']
 
     user_set_sudo = os.getenv("PMB_SUDO")
     if user_set_sudo is not None:

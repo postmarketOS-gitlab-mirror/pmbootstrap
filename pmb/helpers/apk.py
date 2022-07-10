@@ -22,9 +22,9 @@ def _run(args, command, chroot=False, suffix="native", output="log"):
     arguments and the return value.
     """
     if chroot:
-        return pmb.chroot.root(args, command, output=output, suffix=suffix,
+        return pmb.chroot.user(args, command, output=output, suffix=suffix,
                                disable_timeout=True)
-    return pmb.helpers.run.root(args, command, output=output)
+    return pmb.helpers.run.user(args, command, output=output)
 
 
 def _prepare_fifo(args, chroot=False, suffix="native"):
