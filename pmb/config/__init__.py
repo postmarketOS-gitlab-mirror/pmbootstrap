@@ -220,6 +220,30 @@ chroot_mount_bind = {
     "$WORK/packages/$CHANNEL": "/mnt/pmbootstrap-packages",
 }
 
+
+"""
+
+
+
+yooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+1. add the OTA partition map here, and the overlay/bind mount options needed for it too!
+2. Start testing!
+
+
+
+
+
+
+
+"""
+
+
+
+
+
+
+
 # Building chroots (all chroots, except for the rootfs_ chroot) get symlinks in
 # the "pmos" user's home folder pointing to mountfolders from above.
 # Rust packaging is new and still a bit weird in Alpine and postmarketOS. As of

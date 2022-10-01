@@ -1,5 +1,6 @@
 # Copyright 2022 Oliver Smith
 # SPDX-License-Identifier: GPL-3.0-or-later
+import json
 import logging
 import os
 import re
@@ -666,20 +667,25 @@ def install_system_image(args, size_reserve, suffix, step, steps,
     logging.info(f"*** ({step}/{steps}) PREPARE INSTALL BLOCKDEVICE ***")
     pmb.chroot.shutdown(args, True)
     (size_boot, size_root) = get_subpartitions_size(args, suffix)
-    layout = get_partition_layout(size_reserve, args.deviceinfo["cgpt_kpart"])
-    if not args.rsync:
-        pmb.install.blockdevice.create(args, size_boot, size_root,
-                                       size_reserve, split, sdcard)
-        if not split:
-            if args.deviceinfo["cgpt_kpart"]:
-                pmb.install.partition_cgpt(
-                    args, layout, size_boot, size_reserve)
-            else:
-                pmb.install.partition(args, layout, size_boot, size_reserve)
-    if not split:
-        pmb.install.partitions_mount(args, layout, sdcard)
 
-    pmb.install.format(args, layout, boot_label, root_label, sdcard)
+    if args.ota:
+        partmap = json.load(open(f"{args.aports}/partition_maps/partition_map_ota.json", "r"))
+        pmb.install.partition_ota(args, partmap)
+        pmb.install.format_ota(args, partmap, sdcard)
+    else:
+        layout = get_partition_layout(size_reserve, args.deviceinfo["cgpt_kpart"])
+        if not args.rsync:
+            pmb.install.blockdevice.create(args, size_boot, size_root,
+                                        size_reserve, split, sdcard)
+            if not split:
+                if args.deviceinfo["cgpt_kpart"]:
+                    pmb.install.partition_cgpt(
+                        args, layout, size_boot, size_reserve)
+                else:
+                    pmb.install.partition(args, layout, size_boot, size_reserve)
+        if not split:
+            pmb.install.partitions_mount(args, layout, sdcard)
+        pmb.install.format(args, layout, boot_label, root_label, sdcard)
 
     # Just copy all the files
     logging.info(f"*** ({step + 1}/{steps}) FILL INSTALL BLOCKDEVICE ***")

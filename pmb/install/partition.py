@@ -51,6 +51,43 @@ def partitions_mount(args, layout, sdcard):
         target = args.work + "/chroot_native/dev/installp" + str(i)
         pmb.helpers.mount.bind_file(args, source, target)
 
+def partition_ota(args, partmap):
+    """
+    Partition to OTA partition map
+
+    :param map: the partition map to use, see pmaports partition_maps/
+    """
+    if args.deviceinfo["boot_filesystem"]:
+        partmap["boot"]["filesystem"] = args.deviceinfo["boot_filesystem"]
+
+    boot_part_start = args.deviceinfo["boot_part_start"] or "2048"
+    partition_type = args.deviceinfo["partition_type"] or "msdos"
+    size_mb = 0
+
+    logging.info(f"(native) using partition map: {partmap}")
+
+    commands = [
+        ["mktable", partition_type],
+        ["mkpart", "primary", partmap["boot"]["filesystem"], boot_part_start + 's',
+            partmap["boot"]["size"]],
+    ]
+    size_mb += partmap["boot"]["size"]
+
+    # if size_reserve:
+    #     mb_reserved_end = f"{round(size_reserve + size_boot)}M"
+    #     commands += [["mkpart", "primary", mb_boot, mb_reserved_end]]
+
+    for i, part in enumerate(partmap.keys()):
+        if part == "boot":
+            commands += [["set", str(i), "boot", "on"]]
+            continue
+        commands += [
+            ["mkpart", "primary", size_mb, partmap[part]["size"]],
+        ]
+
+    for command in commands:
+        pmb.chroot.root(args, ["parted", "-s", "/dev/install"] +
+                        command, check=False)
 
 def partition(args, layout, size_boot, size_reserve):
     """

@@ -1,0 +1,12 @@
+[
+	{
+		"name": "pmOS_boot",
+		"filesystem": "ext2",
+		"default_size": 256
+	},
+	{
+		"name": "pmOS_root",
+		"filesystem": "ext4",
+		"default_size": 1024
+	}
+]

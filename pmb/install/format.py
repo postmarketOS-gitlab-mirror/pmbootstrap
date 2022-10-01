@@ -3,6 +3,7 @@
 import os
 import logging
 import pmb.chroot
+import pmb.helpers.mount
 
 
 def install_fsprogs(args, filesystem):
@@ -85,8 +86,12 @@ def get_root_filesystem(args):
                          f" filesystems: {', '.join(supported_list)}")
     return ret
 
+def mount_partition(args, device, mountpoint):
+    logging.info("(native) mount " + device + " to " + mountpoint)
+    pmb.chroot.root(args, ["mkdir", "-p", mountpoint])
+    pmb.chroot.root(args, ["mount", device, mountpoint])
 
-def format_and_mount_root(args, device, root_label, sdcard):
+def format_partition(args, device, root_label, sdcard):
     """
     :param device: root partition on install block device (e.g. /dev/installp2)
     :param root_label: label of the root partition (e.g. "pmOS_root")
@@ -118,12 +123,38 @@ def format_and_mount_root(args, device, root_label, sdcard):
         logging.info(f"(native) format {device} (root, {filesystem})")
         pmb.chroot.root(args, mkfs_root_args + [device])
 
-    # Mount
-    mountpoint = "/mnt/install"
-    logging.info("(native) mount " + device + " to " + mountpoint)
-    pmb.chroot.root(args, ["mkdir", "-p", mountpoint])
-    pmb.chroot.root(args, ["mount", device, mountpoint])
+def format_ota(args, partmap, sdcard):
+    """
+    Format and mount partitions for the OTA partition map, set up overlays etc
 
+    :param partmap: dictionary map of partitions, see pmaports partition_maps dir
+    :param sdcard: path to sdcard device (e.g. /dev/mmcblk0) or None
+    """
+
+    for i, part in enumerate(partmap.keys):
+        dev_path = f"/dev/installp{i}"
+
+        if part == "boot":
+            format_and_mount_boot(args, dev_path, partmap[part]["partlabel"])
+        elif part == "home" and args.full_disk_encryption:
+            format_luks_root(args, dev_path)
+            dev_path = "/dev/mapper/pm_crypt"
+        format_partition(args, dev_path, partmap[part]["partlabel"], sdcard)
+        if not partmap[part]["slot"] or (partmap[part]["slot"] == True and part[-2:] == "_a"):
+            mount_partition(args, dev_path, f"/mnt/install/{part[:-2]}")
+
+    dir = "/mnt/install/var/lib/overlays/etc"
+    pmb.chroot.root(args, ["mkdir", "-p", f"{dir}/upper"])
+    pmb.chroot.root(args, ["mkdir", "-p", f"{dir}/lower"])
+    pmb.chroot.root(args, ["mount", "-t", "overlay", "overlay", "-o",
+        f"lowerdir=/mnt/install/etc,"
+        f"upperdir={dir}/upper,"
+        f"workdir={dir}/work"])
+
+    dir = "/mnt/install/home/.pmos/var"
+    pmb.helpers.mount.bind(args, f"{dir}/log", "/mnt/install/var/log")
+    pmb.helpers.mount.bind(args, f"{dir}/lib/flatpak", "/mnt/install/var/lib/flatpak")
+    pmb.helpers.mount.bind(args, f"{dir}/cache/apk", "/mnt/install/var/cache/apk")
 
 def format(args, layout, boot_label, root_label, sdcard):
     """
@@ -139,5 +170,6 @@ def format(args, layout, boot_label, root_label, sdcard):
         format_luks_root(args, root_dev)
         root_dev = "/dev/mapper/pm_crypt"
 
-    format_and_mount_root(args, root_dev, root_label, sdcard)
+    format_partition(args, root_dev, root_label, sdcard)
+    mount_partition(args, root_dev, "/mnt/install")
     format_and_mount_boot(args, boot_dev, boot_label)
