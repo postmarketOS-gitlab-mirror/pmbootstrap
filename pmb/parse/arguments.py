@@ -503,6 +503,16 @@ def arguments_kconfig(subparser):
     migrate.add_argument("--arch", choices=arch_choices, dest="arch")
     add_kernel_arg(migrate)
 
+    # "pmbootstrap kconfig regenerate"
+    regenerate = sub.add_parser("regenerate",
+                                help="Regenerate the kconfig based on the "
+                                     "pmos.config fragment in pmaports and the "
+                                     "given configs.")
+    regenerate.add_argument("--arch", choices=arch_choices, dest="arch")
+    regenerate.add_argument("--defconfigs", nargs='+', dest="defconfigs", required=True)
+    #regenerate.add_argument("defconfigs", nargs='+')
+    add_kernel_arg(regenerate)
+
 
 def arguments_repo_missing(subparser):
     ret = subparser.add_parser("repo_missing")

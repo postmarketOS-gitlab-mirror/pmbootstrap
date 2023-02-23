@@ -78,7 +78,7 @@ def get_outputdir(args, pkgname, apkbuild):
                        " template with: pmbootstrap aportgen " + pkgname)
 
 
-def menuconfig(args, pkgname, use_oldconfig):
+def menuconfig(args, pkgname, action):
     # Pkgname: allow omitting "linux-" prefix
     if not pkgname.startswith("linux-"):
         pkgname = "linux-" + pkgname
@@ -99,16 +99,18 @@ def menuconfig(args, pkgname, use_oldconfig):
     depends = apkbuild["makedepends"]
     copy_xauth = False
 
-    if use_oldconfig:
-        kopt = "oldconfig"
+    if action == "migrate":
+        kopt = ["oldconfig"]
+    elif action == "regenerate":
+        kopt = args.defconfigs + ["pmos.config"]
     else:
-        kopt = "menuconfig"
+        kopt = ["menuconfig"]
         if args.xconfig:
             depends += ["qt5-qtbase-dev", "font-noto"]
-            kopt = "xconfig"
+            kopt = ["xconfig"]
             copy_xauth = True
         elif args.nconfig:
-            kopt = "nconfig"
+            kopt = ["nconfig"]
             depends += ["ncurses-dev"]
         else:
             depends += ["ncurses-dev"]
@@ -128,16 +130,23 @@ def menuconfig(args, pkgname, use_oldconfig):
                     "/home/pmos/build", output="interactive",
                     env={"CARCH": arch})
 
+    if action == "regenerate":
+        pmos_fragment_source = f"{args.aports}/pmos.config"
+        # FIXME: properly get the source directory instead of hardcoding
+        pmos_fragment_destination = f"{args.work}/chroot_native/home/pmos/build/src/linux-pureos-6.1.12pureos1/kernel/configs"
+        logging.info("(native) copy pmos.config into kernel sources")
+        pmb.helpers.run.root(args, ["cp", pmos_fragment_source, pmos_fragment_destination])
+
     # Run make menuconfig
     outputdir = get_outputdir(args, pkgname, apkbuild)
-    logging.info("(native) make " + kopt)
+    logging.info("(native) make " + " ".join(kopt))
     env = {"ARCH": pmb.parse.arch.alpine_to_kernel(arch),
            "DISPLAY": os.environ.get("DISPLAY"),
            "XAUTHORITY": "/home/pmos/.Xauthority"}
     if cross:
         env["CROSS_COMPILE"] = f"{hostspec}-"
         env["CC"] = f"{hostspec}-gcc"
-    pmb.chroot.user(args, ["make", kopt], "native",
+    pmb.chroot.user(args, ["make"] + kopt, "native",
                     outputdir, output="tui", env=env)
 
     # Find the updated config
