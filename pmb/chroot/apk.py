@@ -3,6 +3,7 @@
 import os
 import logging
 import shlex
+from typing import List
 
 import pmb.chroot
 import pmb.config
@@ -12,9 +13,10 @@ import pmb.parse.apkindex
 import pmb.parse.arch
 import pmb.parse.depends
 import pmb.parse.version
+from pmb.core import Suffix
 
 
-def update_repository_list(args, suffix="native", check=False):
+def update_repository_list(args, suffix: Suffix=Suffix.native(), check=False):
     """
     Update /etc/apk/repositories, if it is outdated (when the user changed the
     --mirror-alpine or --mirror-pmOS parameters).
@@ -29,8 +31,8 @@ def update_repository_list(args, suffix="native", check=False):
         return
 
     # Read old entries or create folder structure
-    path = f"{args.work}/chroot_{suffix}/etc/apk/repositories"
-    lines_old = []
+    path = f"{args.work}/{suffix.chroot()}/etc/apk/repositories"
+    lines_old: List[str] = []
     if os.path.exists(path):
         # Read all old lines
         lines_old = []
@@ -60,7 +62,7 @@ def update_repository_list(args, suffix="native", check=False):
     update_repository_list(args, suffix, True)
 
 
-def check_min_version(args, suffix="native"):
+def check_min_version(args, suffix: Suffix=Suffix.native()):
     """
     Check the minimum apk version, before running it the first time in the
     current session (lifetime of one pmbootstrap call).
@@ -71,7 +73,7 @@ def check_min_version(args, suffix="native"):
         return
 
     # Skip if apk is not installed yet
-    if not os.path.exists(f"{args.work}/chroot_{suffix}/sbin/apk"):
+    if not os.path.exists(f"{args.work}/{suffix.chroot()}/sbin/apk"):
         logging.debug(f"NOTE: Skipped apk version check for chroot '{suffix}'"
                       ", because it is not installed yet!")
         return
@@ -209,7 +211,7 @@ def install_run_apk(args, to_add, to_add_local, to_del, suffix):
                             suffix=suffix)
 
 
-def install(args, packages, suffix="native", build=True):
+def install(args, packages, suffix: Suffix=Suffix.native(), build=True):
     """
     Install packages from pmbootstrap's local package index or the pmOS/Alpine
     binary package mirrors. Iterate over all dependencies recursively, and
@@ -247,7 +249,7 @@ def install(args, packages, suffix="native", build=True):
     install_run_apk(args, to_add_no_deps, to_add_local, to_del, suffix)
 
 
-def installed(args, suffix="native"):
+def installed(args, suffix: Suffix=Suffix.native()):
     """
     Read the list of installed packages (which has almost the same format, as
     an APKINDEX, but with more keys).
@@ -262,5 +264,5 @@ def installed(args, suffix="native"):
                 }, ...
               }
     """
-    path = f"{args.work}/chroot_{suffix}/lib/apk/db/installed"
+    path = f"{args.work}/{suffix.chroot()}/lib/apk/db/installed"
     return pmb.parse.apkindex.parse(path, False)
