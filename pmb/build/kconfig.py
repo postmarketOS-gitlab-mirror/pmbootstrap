@@ -85,7 +85,7 @@ def extract_and_patch_sources(args, pkgname, arch):
     logging.info("(native) apply patches")
     pmb.chroot.user(args, ["abuild", "prepare"], "native",
                     "/home/pmos/build", output="interactive",
-                    env={"CARCH": arch})
+                    env={"CARCH": arch, "ONLY_COPY": "1"})
 
 
 def menuconfig(args, pkgname, use_oldconfig):
