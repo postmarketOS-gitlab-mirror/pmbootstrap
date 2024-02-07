@@ -569,7 +569,7 @@ def ask_for_hostname(args, device):
 
 
 def ask_for_ssh_keys(args):
-    if not len(glob.glob(os.path.expanduser("~/.ssh/id_*.pub"))):
+    if not len(glob.glob(os.path.expanduser(args.ssh_key_glob))):
         return False
     return pmb.helpers.cli.confirm(args,
                                    "Would you like to copy your SSH public"
