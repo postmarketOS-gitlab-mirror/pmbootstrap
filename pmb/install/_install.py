@@ -9,6 +9,7 @@ import sys
 
 import pmb.chroot
 import pmb.chroot.apk
+import pmb.chroot.flatpak
 import pmb.chroot.other
 import pmb.chroot.initfs
 import pmb.config
@@ -1183,6 +1184,67 @@ def get_recommends(args, packages, initial=True):
     return ret
 
 
+def _split_recommends(args, recommends):
+    """
+    Parse the recommends packages, and split them into the different install
+    categories. Recommended packages currently support being installed from APK
+    and flatpak. The syntax is:
+
+    apk-name[;flatpak:remote:id]
+
+    Where things in-between [] are optional. This function checks that flatpak
+    recommends are suitable to be installed in the device and exists.
+    Otherwise it will fallback to using the apk-name.
+
+    :param recommends: list of pmb_recommends to be installed
+    :returns: a dictionary with the different possible kind of recommends as
+              keys, and the list of packages to install for them in a list, e.g:
+              {
+                "apk": ["gnome-software", "firefox"],
+                "flatpak": ["flathub:org.gnome.Contacts"],
+              }
+    """
+
+    # First, do some checks where it never makes sense to use flatpaks
+    res = {"apk": [], "flatpak": []}
+    arch = args.deviceinfo["arch"]
+    if arch not in ("x86_64", "aarch64"):
+        logging.debug(f"split_recommends: device arch {arch} not suitable for"
+                      " flatpaks")
+        res["apk"] = recommends
+        return res
+
+    # And now onto the split
+    for rec in recommends:
+        rec = rec.split(";")
+        if len(rec) == 1:
+            res["apk"].append(rec[0])
+            continue
+        if len(rec) == 2:
+            apk = rec[0]
+            flatpak = rec[1].split(":")
+            assert flatpak[0] == "flatpak", f"wrong recommends syntax in {rec}"
+            assert "flatpak" in recommends, "flatpaks requested, but not going to be installed"
+
+            flatpak_name = flatpak[2]
+            # Transform to app/ID/ARCH
+            if not flatpak_name.startswith("app/"):
+                flatpak_name = "app/" + flatpak_name
+            split = flatpak_name.split("/")
+            if len(split) < 3:
+                split.append(arch)
+            else:
+                split[2] = arch
+            flatpak_name = "/".join(split)
+            if pmb.chroot.flatpak.exists(args, flatpak_name, flatpak[1]):
+                res["flatpak"].append(":".join([flatpak[1], flatpak_name]))
+            else:
+                res["apk"].append(apk)
+
+    logging.debug(f"split_recommends: {res}")
+    return res
+
+
 def create_device_rootfs(args, step, steps):
     # List all packages to be installed (including the ones specified by --add)
     # and upgrade the installed packages/apkindexes
@@ -1240,7 +1302,9 @@ def create_device_rootfs(args, step, steps):
     pmb.helpers.repo.update(args, args.deviceinfo["arch"])
 
     # Install uninstallable "dependencies" by default
-    install_packages += get_recommends(args, install_packages)
+    recommends = get_recommends(args, install_packages)
+    recommends = _split_recommends(args, recommends)
+    install_packages += recommends["apk"]
 
     # Explicitly call build on the install packages, to re-build them or any
     # dependency, in case the version increased
@@ -1252,6 +1316,7 @@ def create_device_rootfs(args, step, steps):
     # because that doesn't always happen automatically yet, e.g. when the user
     # installed a hook without pmbootstrap - see #69 for more info)
     pmb.chroot.apk.install(args, install_packages, suffix)
+    pmb.chroot.flatpak.install(args, recommends["flatpak"], suffix)
     flavor = pmb.chroot.other.kernel_flavor_installed(args, suffix)
     pmb.chroot.initfs.build(args, flavor, suffix)
 
