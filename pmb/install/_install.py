@@ -1208,7 +1208,10 @@ def _split_recommends(args, recommends):
     # First, do some checks where it never makes sense to use flatpaks
     res = {"apk": [], "flatpak": []}
     arch = args.deviceinfo["arch"]
-    if arch not in ("x86_64", "aarch64"):
+    if args.flatpak == "never":
+        res["apk"] = recommends
+        return res
+    if arch not in ("x86_64", "aarch64") and args.flatpak != "always":
         logging.debug(f"split_recommends: device arch {arch} not suitable for"
                       " flatpaks")
         res["apk"] = recommends
