@@ -16,6 +16,7 @@ import pmb.config
 import pmb.config.pmaports
 import pmb.helpers.devices
 import pmb.helpers.run
+import pmb.helpers.ui
 import pmb.install.blockdevice
 import pmb.install.recovery
 import pmb.install.ui
@@ -1211,8 +1212,11 @@ def _split_recommends(args, recommends):
     if args.flatpak == "never":
         res["apk"] = recommends
         return res
-    if arch not in ("x86_64", "aarch64") and args.flatpak != "always":
-        logging.debug(f"split_recommends: device arch {arch} not suitable for"
+    if (
+            args.flatpak == "default" and
+            not pmb.helprs.ui.flatpak_by_default(arch, args.ui)
+    ):
+        logging.debug("split_recommends: configuration not suitable for"
                       " flatpaks")
         res["apk"] = recommends
         return res

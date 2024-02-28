@@ -189,7 +189,9 @@ def ask_for_ui_extras(args, ui):
                                    default=args.ui_extras)
 
 
-def ask_for_flatpak(args):
+def ask_for_flatpak(args, info, ui):
+    if not pmb.helpers.ui.flatpak_by_default(info["arch"], ui):
+        return "default"
     # Flatpaks
     logging.info("Some apps that are installed through recommends can be"
                  " installed through flatpak instead of through apk. Options:")
