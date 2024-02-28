@@ -3,6 +3,8 @@
 import os
 import glob
 import pmb.parse
+import pmb.helpers.other
+from typing import Optional
 
 
 def list(args, arch):
@@ -23,7 +25,7 @@ def list(args, arch):
     return ret
 
 
-def flatpak_by_default(arch: str, ui: str) -> bool:
+def flatpak_by_default(arch: str, ui: str, disk: Optional[str] = None) -> bool:
     """
     Whether it's recommended to use flatpaks by default for this configuration
 
@@ -36,4 +38,9 @@ def flatpak_by_default(arch: str, ui: str) -> bool:
     ui = ui.lower()
     if "gnome" not in ui and "plasma" not in ui and "phosh" not in ui:
         return False
+    if disk is not None:
+        size = pmb.helpers.other.get_device_size(disk)
+        # This is just a sanity check. Assume it's possible if no size
+        if size and size < 16:
+            return False
     return True

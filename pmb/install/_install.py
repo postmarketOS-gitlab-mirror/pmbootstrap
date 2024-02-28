@@ -15,6 +15,7 @@ import pmb.chroot.initfs
 import pmb.config
 import pmb.config.pmaports
 import pmb.helpers.devices
+import pmb.helpers.other
 import pmb.helpers.run
 import pmb.helpers.ui
 import pmb.install.blockdevice
@@ -662,24 +663,16 @@ def sanity_check_disk(args):
 
 
 def sanity_check_disk_size(args):
-    device = args.disk
-    devpath = os.path.realpath(device)
-    sysfs = '/sys/class/block/{}/size'.format(devpath.replace('/dev/', ''))
-    if not os.path.isfile(sysfs):
-        # This is a best-effort sanity check, continue if it's not checkable
+    size = pmb.helpers.other.get_device_size(args.disk)
+    # This is a best-effort sanity check, continue if it's not checkable
+    if size is None:
         return
-
-    with open(sysfs) as handle:
-        raw = handle.read()
-
-    # Size is in 512-byte blocks
-    size = int(raw.strip())
-    human = "{:.2f} GiB".format(size / 2 / 1024 / 1024)
+    human = "{:.2f} GiB".format(size)
 
     # Warn if the size is larger than 100GiB
-    if not args.assume_yes and size > (100 * 2 * 1024 * 1024):
+    if not args.assume_yes and size > 100:
         if not pmb.helpers.cli.confirm(args,
-                                       f"WARNING: The target disk ({devpath}) "
+                                       f"WARNING: The target disk ({args.disk}) "
                                        "is larger than a usual SD card "
                                        "(>100GiB). Are you sure you want to "
                                        f"overwrite this {human} disk?",
@@ -1214,7 +1207,7 @@ def _split_recommends(args, recommends):
         return res
     if (
             args.flatpak == "default" and
-            not pmb.helprs.ui.flatpak_by_default(arch, args.ui)
+            not pmb.helprs.ui.flatpak_by_default(arch, args.ui, args.disk)
     ):
         logging.debug("split_recommends: configuration not suitable for"
                       " flatpaks")
